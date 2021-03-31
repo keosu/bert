@@ -29,10 +29,19 @@ import tokenization
 import six
 import tensorflow as tf
 
+import sys
+sys.path.append("..") 
+from dump_config import * 
+tf.get_logger().propagate = False 
+
 flags = tf.flags
 
 FLAGS = flags.FLAGS
 
+flags.DEFINE_bool(
+    "dump", False,
+    "Whether to dump intermedia layer output in predict mode.")
+    
 ## Required parameters
 flags.DEFINE_string(
     "bert_config_file", None,
@@ -1252,9 +1261,13 @@ def main(_):
 
     # If running eval on the TPU, you will need to specify the number of
     # steps.
-    all_results = []
+    all_results = []    
+    hooks = []
+    if FLAGS.dump:
+      hooks.append(get_dump_tensor_hook())
+
     for result in estimator.predict(
-        predict_input_fn, yield_single_examples=True):
+        predict_input_fn, yield_single_examples=True, hooks = hooks): 
       if len(all_results) % 1000 == 0:
         tf.logging.info("Processing example: %d" % (len(all_results)))
       unique_id = int(result["unique_ids"])
